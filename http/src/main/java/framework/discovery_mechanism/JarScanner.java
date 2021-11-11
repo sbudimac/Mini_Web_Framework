@@ -1,9 +1,9 @@
 package framework.discovery_mechanism;
 
-import framework.annotations.Controller;
-import framework.annotations.GET;
-import framework.annotations.POST;
-import framework.annotations.Path;
+import framework.annotations.route_registration.Controller;
+import framework.annotations.route_registration.GET;
+import framework.annotations.route_registration.POST;
+import framework.annotations.route_registration.Path;
 
 import java.io.File;
 import java.io.FilenameFilter;
