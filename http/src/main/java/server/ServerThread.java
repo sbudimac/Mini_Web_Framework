@@ -1,14 +1,16 @@
 package server;
 
+import framework.discovery_mechanism.MethodInvoker;
 import framework.response.JsonResponse;
 import framework.response.Response;
-import framework.request.enums.Method;
+import framework.request.enums.HttpMethod;
 import framework.request.Header;
 import framework.request.Helper;
 import framework.request.Request;
 import framework.request.exceptions.RequestNotValidException;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,6 +49,7 @@ public class ServerThread implements Runnable{
                 return;
             }
 
+            MethodInvoker.invokeMethod(request.getMethod(), request.getLocation());
 
             // Response example
             Map<String, Object> responseMap = new HashMap<>();
@@ -61,7 +64,7 @@ public class ServerThread implements Runnable{
             out.close();
             socket.close();
 
-        } catch (IOException | RequestNotValidException e) {
+        } catch (IOException | RequestNotValidException | IllegalAccessException | InvocationTargetException e) {
             e.printStackTrace();
         }
     }
@@ -73,7 +76,7 @@ public class ServerThread implements Runnable{
         }
 
         String[] actionRow = command.split(" ");
-        Method method = Method.valueOf(actionRow[0]);
+        HttpMethod method = HttpMethod.valueOf(actionRow[0]);
         String route = actionRow[1];
         Header header = new Header();
         HashMap<String, String> parameters = Helper.getParametersFromRoute(route);
@@ -86,7 +89,7 @@ public class ServerThread implements Runnable{
             }
         } while(!command.trim().equals(""));
 
-        if(method.equals(Method.POST)) {
+        if(method.equals(HttpMethod.POST)) {
             int contentLength = Integer.parseInt(header.get("content-length"));
             char[] buff = new char[contentLength];
             in.read(buff, 0, contentLength);

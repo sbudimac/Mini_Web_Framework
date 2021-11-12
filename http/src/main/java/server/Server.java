@@ -1,6 +1,9 @@
 package server;
 
+import framework.discovery_mechanism.ClassFinder;
+
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -13,12 +16,13 @@ public class Server {
         try {
             ServerSocket serverSocket = new ServerSocket(TCP_PORT);
             System.out.println("Server is running at http://localhost:"+TCP_PORT);
+            new ClassFinder();
             while(true){
                 Socket socket = serverSocket.accept();
                 new Thread(new ServerThread(socket)).start();
             }
 
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
             e.printStackTrace();
         }
 

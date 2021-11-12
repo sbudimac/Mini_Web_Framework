@@ -4,6 +4,7 @@ import framework.annotations.route_registration.Controller;
 import framework.annotations.route_registration.GET;
 import framework.annotations.route_registration.POST;
 import framework.annotations.route_registration.Path;
+import framework.request.enums.HttpMethod;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,10 +16,6 @@ import java.util.Objects;
 
 public class ClassFinder {
     Object agent;
-
-    public static void main(String[] args) throws IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        new ClassFinder();
-    }
 
     public ClassFinder() throws IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         File libDir = new File(".");
@@ -46,9 +43,7 @@ public class ClassFinder {
     private void processClass(String dirPath, File classFile) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         String fileName = classFile.getCanonicalPath();
         fileName = fileName.replace(dirPath, "");
-        //System.out.println("Processed file: " + fileName);
         String className = filterName(fileName);
-        //System.out.println("Qualified name: " +  className);
         Class cl = Class.forName(className);
         if (cl.getAnnotation(Controller.class) != null) {
             this.agent = cl.getDeclaredConstructor().newInstance();
@@ -59,14 +54,22 @@ public class ClassFinder {
     @SuppressWarnings({"rawtypes"})
     private void processMethods(Class cl) throws InvocationTargetException, IllegalAccessException {
         for (Method m : cl.getDeclaredMethods()) {
-            //primera radi
             GET get = m.getAnnotation(GET.class);
             POST post = m.getAnnotation(POST.class);
             Path path = m.getAnnotation(Path.class);
             if (path != null && (get != null || post != null)) {
-                System.out.println("METHOD: " + m);
-                System.out.println("MESSAGE TYPE: " + path.path());
-                m.invoke(this.agent);
+                HttpMethod httpMethod = null;
+                if (get != null) {
+                    httpMethod = HttpMethod.GET;
+                } else {
+                    httpMethod = HttpMethod.POST;
+                }
+                if (MethodInvoker.mapperExists(httpMethod, path.path(), this.agent)) {
+                    System.out.println("Two methods with same http method and path in the same controller.");
+                    System.exit(0);
+                }
+                MethodMapper mm = new MethodMapper(httpMethod, path.path(), this.agent, m);
+                MethodInvoker.mappers.add(mm);
             }
         }
     }
@@ -74,7 +77,8 @@ public class ClassFinder {
     private String filterName(String path) {
         path = path.replace(".class", "");
         String filterPath = path.replace(File.separator, ".");
-        filterPath = filterPath.replace("http.target.classes.", "");
+        filterPath = filterPath.substring(filterPath.indexOf("classes") - 1);
+        filterPath = filterPath.replace("classes.", "");
         return filterPath.substring(1);
     }
 }

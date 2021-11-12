@@ -1,25 +1,25 @@
 package framework.request;
 
-import framework.request.enums.Method;
+import framework.request.enums.HttpMethod;
 
 import java.util.HashMap;
 
 public class Request {
 
-    private Method method;
+    private HttpMethod method;
     private String location;
     private Header header;
     private HashMap<String, String> parameters;
 
     public Request() {
-        this(Method.GET, "/");
+        this(HttpMethod.GET, "/");
     }
 
-    public Request(Method method, String location) {
+    public Request(HttpMethod method, String location) {
         this(method, location, new Header(), new HashMap<String, String>());
     }
 
-    public Request(Method method, String location, Header header, HashMap<String, String> parameters) {
+    public Request(HttpMethod method, String location, Header header, HashMap<String, String> parameters) {
         this.method = method;
         this.location = location;
         this.header = header;
@@ -38,11 +38,11 @@ public class Request {
         return new HashMap<String, String>(this.parameters);
     }
 
-    public boolean isMethod(Method method) {
+    public boolean isMethod(HttpMethod method) {
         return this.getMethod().equals(method);
     }
 
-    public Method getMethod() {
+    public HttpMethod getMethod() {
         return method;
     }
 

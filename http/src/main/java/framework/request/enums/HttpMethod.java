@@ -1,6 +1,6 @@
 package framework.request.enums;
 
-public enum Method {
+public enum HttpMethod {
     GET,
     POST
 }
