@@ -1,6 +1,6 @@
 package server;
 
-import framework.discovery_mechanism.ClassFinder;
+import framework.di.DIEngine;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -16,7 +16,7 @@ public class Server {
         try {
             ServerSocket serverSocket = new ServerSocket(TCP_PORT);
             System.out.println("Server is running at http://localhost:"+TCP_PORT);
-            new ClassFinder();
+            new DIEngine();
             while(true){
                 Socket socket = serverSocket.accept();
                 new Thread(new ServerThread(socket)).start();

@@ -8,5 +8,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Bean {
-    Scope scope() default Scope.PROTOTYPE;
+    Scope scope() default Scope.SINGLETON;
 }

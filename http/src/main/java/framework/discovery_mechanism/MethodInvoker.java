@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MethodInvoker {
-    static List<MethodMapper> mappers = new ArrayList<>();
+    public static List<MethodMapper> mappers = new ArrayList<>();
 
     public static void invokeMethod(HttpMethod method, String path) throws InvocationTargetException, IllegalAccessException {
         for (MethodMapper mapper : mappers) {
