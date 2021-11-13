@@ -4,7 +4,6 @@ import java.lang.reflect.Method;
 
 import framework.request.enums.HttpMethod;
 
-@SuppressWarnings({"rawtypes"})
 public class MethodMapper {
     private final HttpMethod httpMethod;
     private final String path;

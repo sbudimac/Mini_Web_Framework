@@ -1,5 +1,6 @@
 package framework.discovery_mechanism;
 
+import framework.annotations.dependency_injection.Autowired;
 import framework.annotations.route_registration.Controller;
 import framework.annotations.route_registration.GET;
 import framework.annotations.route_registration.POST;
@@ -8,8 +9,10 @@ import framework.request.enums.HttpMethod;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -39,7 +42,7 @@ public class ClassFinder {
     }
 
 
-    @SuppressWarnings({"unchecked", "unchecked", "rawtypes"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private void processClass(String dirPath, File classFile) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         String fileName = classFile.getCanonicalPath();
         fileName = fileName.replace(dirPath, "");
@@ -48,6 +51,7 @@ public class ClassFinder {
         if (cl.getAnnotation(Controller.class) != null) {
             this.agent = cl.getDeclaredConstructor().newInstance();
             processMethods(cl);
+            processFields(cl, this.agent);
         }
     }
 
@@ -74,11 +78,34 @@ public class ClassFinder {
         }
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void processFields(Class cl, Object agent) throws ClassNotFoundException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InstantiationException {
+        for (Field f : cl.getDeclaredFields()) {
+            Autowired autowired = f.getAnnotation(Autowired.class);
+            if (autowired != null) {
+                f.setAccessible(true);
+                Class fClass = Class.forName(getClassName(f));
+                Object obj = fClass.getDeclaredConstructor().newInstance();
+                processFields(fClass, obj);
+                f.set(agent, obj);
+                if (autowired.verbose()) {
+                    System.out.println("Initialized " + f.getType() + " " + f.getName() + " in " + obj.getClass() + " on " + LocalDateTime.now() + " with " + obj.hashCode());
+                }
+            }
+        }
+    }
+
     private String filterName(String path) {
         path = path.replace(".class", "");
         String filterPath = path.replace(File.separator, ".");
         filterPath = filterPath.substring(filterPath.indexOf("classes") - 1);
         filterPath = filterPath.replace("classes.", "");
         return filterPath.substring(1);
+    }
+
+    private String getClassName(Field f) {
+        String fullName = String.valueOf(f.getType());
+        String[] parts = fullName.split(" ");
+        return parts[parts.length - 1];
     }
 }
