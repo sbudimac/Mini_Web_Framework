@@ -104,7 +104,7 @@ public class DIEngine {
             if (autowired != null) {
                 f.setAccessible(true);
                 Class fClass = Class.forName(getClassName(f));
-                if (fClass.getAnnotation(Bean.class) == null && fClass.getAnnotation(Service.class) == null && fClass.getAnnotation(Component.class) == null && f.getAnnotation(Qualifier.class) == null) {
+                if (fClass.getAnnotation(Bean.class) == null && fClass.getAnnotation(Service.class) == null && fClass.getAnnotation(Component.class) == null && f.getAnnotation(Qualifier.class) == null && !fClass.isInterface()) {
                     throw new RuntimeException("Autowired field class is not a bean.");
                 }
                 Object obj;
@@ -113,6 +113,9 @@ public class DIEngine {
                     Class impl = Class.forName((String) DependencyContainer.implementations.get(qualifier.value()));
                     obj = inject(impl);
                 } else {
+                    if (fClass.isInterface()) {
+                        throw new RuntimeException("Autowired interface field does not have a qualifier.");
+                    }
                     obj = inject(fClass);
                 }
                 processFields(fClass, obj);
