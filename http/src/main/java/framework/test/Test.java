@@ -1,6 +1,7 @@
 package framework.test;
 
 import framework.annotations.dependency_injection.Autowired;
+import framework.annotations.dependency_injection.Qualifier;
 import framework.annotations.route_registration.Controller;
 import framework.annotations.route_registration.GET;
 import framework.annotations.route_registration.POST;
@@ -10,6 +11,10 @@ import framework.annotations.route_registration.Path;
 public class Test {
     @Autowired(verbose = true)
     private DITest diTest;
+
+    @Autowired(verbose = true)
+    @Qualifier("implementation")
+    private ITest iTest;
 
     @GET
     @Path(path = "/test")

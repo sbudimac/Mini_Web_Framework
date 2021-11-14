@@ -27,6 +27,9 @@ public class DIEngine {
         List<File> content = new ArrayList<>();
         scanFiles(content, Objects.requireNonNull(libDir.listFiles()));
         for (File f : content) {
+            generateImplementations(libDir.getCanonicalPath(), f);
+        }
+        for (File f : content) {
             processClass(libDir.getCanonicalPath(), f);
         }
     }
@@ -40,6 +43,18 @@ public class DIEngine {
                     content.add(file);
                 }
             }
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void generateImplementations(String dirPath, File classFile) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        String fileName = classFile.getCanonicalPath();
+        fileName = fileName.replace(dirPath, "");
+        String className = filterName(fileName);
+        Class cl = Class.forName(className);
+        if (cl.getAnnotation(Qualifier.class) != null) {
+            Qualifier qualifier = (Qualifier) cl.getAnnotation(Qualifier.class);
+            DependencyContainer.implementations.put(qualifier.value(), cl.getDeclaredConstructor().newInstance());
         }
     }
 
@@ -87,7 +102,7 @@ public class DIEngine {
             if (autowired != null) {
                 f.setAccessible(true);
                 Class fClass = Class.forName(getClassName(f));
-                if (fClass.getAnnotation(Bean.class) == null && fClass.getAnnotation(Service.class) == null && fClass.getAnnotation(Component.class) == null) {
+                if (fClass.getAnnotation(Bean.class) == null && fClass.getAnnotation(Service.class) == null && fClass.getAnnotation(Component.class) == null && f.getAnnotation(Qualifier.class) == null) {
                     System.out.println("Autowired field class is not a bean.");
                     System.exit(0);
                 }
@@ -104,17 +119,18 @@ public class DIEngine {
                     } else if (bean.scope().equals(Scope.PROTOTYPE)) {
                         obj = fClass.getDeclaredConstructor().newInstance();
                     }
-                }
-                if (fClass.getAnnotation(Service.class) != null) {
+                } else if (fClass.getAnnotation(Service.class) != null) {
                     if (singletons.get(fClass.getName()) == null) {
                         obj = fClass.getDeclaredConstructor().newInstance();
                         singletons.put(fClass.getName(), obj);
                     } else {
                         obj = singletons.get(fClass.getName());
                     }
-                }
-                if (fClass.getAnnotation(Component.class) != null) {
+                } else if (fClass.getAnnotation(Component.class) != null) {
                     obj = fClass.getDeclaredConstructor().newInstance();
+                } else if (f.getAnnotation(Qualifier.class) != null) {
+                    Qualifier qualifier = f.getAnnotation(Qualifier.class);
+                    obj = DependencyContainer.implementations.get(qualifier.value());
                 }
                 processFields(fClass, obj);
                 f.set(agent, obj);
