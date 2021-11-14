@@ -16,8 +16,4 @@ public class DITest {
 
     @Autowired(verbose = false)
     private TreeTest falseTest;
-
-    public DITest() {
-        System.out.println("DITest injected");
-    }
 }

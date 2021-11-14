@@ -52,9 +52,12 @@ public class DIEngine {
         fileName = fileName.replace(dirPath, "");
         String className = filterName(fileName);
         Class cl = Class.forName(className);
-        if (cl.getAnnotation(Qualifier.class) != null) {
+        if (cl.getAnnotation(Qualifier.class) != null && (cl.getAnnotation(Bean.class) != null || cl.getAnnotation(Service.class) != null || cl.getAnnotation(Component.class) != null)) {
             Qualifier qualifier = (Qualifier) cl.getAnnotation(Qualifier.class);
-            DependencyContainer.implementations.put(qualifier.value(), cl.getDeclaredConstructor().newInstance());
+            if (DependencyContainer.implementations.get(qualifier.value()) != null) {
+                throw new RuntimeException("Qualifier " + qualifier.value() + " already exists");
+            }
+            DependencyContainer.implementations.put(qualifier.value(), className);
         }
     }
 
@@ -86,8 +89,7 @@ public class DIEngine {
                     httpMethod = HttpMethod.POST;
                 }
                 if (MethodInvoker.mapperExists(httpMethod, path.path(), this.agent)) {
-                    System.out.println("Two methods with same http method and path in the same controller.");
-                    System.exit(0);
+                    throw new RuntimeException("Two methods with same http method and path in the same controller.");
                 }
                 MethodMapper mm = new MethodMapper(httpMethod, path.path(), this.agent, m);
                 MethodInvoker.mappers.add(mm);
@@ -103,34 +105,15 @@ public class DIEngine {
                 f.setAccessible(true);
                 Class fClass = Class.forName(getClassName(f));
                 if (fClass.getAnnotation(Bean.class) == null && fClass.getAnnotation(Service.class) == null && fClass.getAnnotation(Component.class) == null && f.getAnnotation(Qualifier.class) == null) {
-                    System.out.println("Autowired field class is not a bean.");
-                    System.exit(0);
+                    throw new RuntimeException("Autowired field class is not a bean.");
                 }
-                Object obj = null;
-                if (fClass.getAnnotation(Bean.class) != null) {
-                    Bean bean = (Bean) fClass.getAnnotation(Bean.class);
-                    if (bean.scope().equals(Scope.SINGLETON)) {
-                        if (singletons.get(fClass.getName()) == null) {
-                            obj = fClass.getDeclaredConstructor().newInstance();
-                            singletons.put(fClass.getName(), obj);
-                        } else {
-                            obj = singletons.get(fClass.getName());
-                        }
-                    } else if (bean.scope().equals(Scope.PROTOTYPE)) {
-                        obj = fClass.getDeclaredConstructor().newInstance();
-                    }
-                } else if (fClass.getAnnotation(Service.class) != null) {
-                    if (singletons.get(fClass.getName()) == null) {
-                        obj = fClass.getDeclaredConstructor().newInstance();
-                        singletons.put(fClass.getName(), obj);
-                    } else {
-                        obj = singletons.get(fClass.getName());
-                    }
-                } else if (fClass.getAnnotation(Component.class) != null) {
-                    obj = fClass.getDeclaredConstructor().newInstance();
-                } else if (f.getAnnotation(Qualifier.class) != null) {
+                Object obj;
+                if (f.getAnnotation(Qualifier.class) != null) {
                     Qualifier qualifier = f.getAnnotation(Qualifier.class);
-                    obj = DependencyContainer.implementations.get(qualifier.value());
+                    Class impl = Class.forName((String) DependencyContainer.implementations.get(qualifier.value()));
+                    obj = inject(impl);
+                } else {
+                    obj = inject(fClass);
                 }
                 processFields(fClass, obj);
                 f.set(agent, obj);
@@ -140,6 +123,36 @@ public class DIEngine {
                 }
             }
         }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private Object inject(Class fClass) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        Object obj = null;
+        if (fClass.getAnnotation(Bean.class) != null) {
+            Bean bean = (Bean) fClass.getAnnotation(Bean.class);
+            if (bean.scope().equals(Scope.SINGLETON)) {
+                if (singletons.get(fClass.getName()) == null) {
+                    obj = fClass.getDeclaredConstructor().newInstance();
+                    singletons.put(fClass.getName(), obj);
+                } else {
+                    obj = singletons.get(fClass.getName());
+                }
+            } else if (bean.scope().equals(Scope.PROTOTYPE)) {
+                obj = fClass.getDeclaredConstructor().newInstance();
+            }
+        } else if (fClass.getAnnotation(Service.class) != null) {
+            if (singletons.get(fClass.getName()) == null) {
+                obj = fClass.getDeclaredConstructor().newInstance();
+                singletons.put(fClass.getName(), obj);
+            } else {
+                obj = singletons.get(fClass.getName());
+            }
+        } else if (fClass.getAnnotation(Component.class) != null) {
+            obj = fClass.getDeclaredConstructor().newInstance();
+        } else {
+            throw new RuntimeException("Field class is not a Bean");
+        }
+        return obj;
     }
 
     private String filterName(String path) {

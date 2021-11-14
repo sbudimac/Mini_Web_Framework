@@ -16,6 +16,10 @@ public class Test {
     @Qualifier("implementation")
     private ITest iTest;
 
+    @Autowired(verbose = true)
+    @Qualifier("implementation")
+    private ITest iTest2;
+
     @GET
     @Path(path = "/test")
     public void test() {
