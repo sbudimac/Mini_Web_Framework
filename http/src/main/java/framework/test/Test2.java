@@ -1,12 +1,14 @@
 package framework.test;
 
-import framework.annotations.dependency_injection.*;
 import framework.annotations.route_registration.Controller;
 import framework.annotations.route_registration.GET;
 import framework.annotations.route_registration.Path;
 
-@Component
-public class TreeTest {
-    @Autowired(verbose = true)
-    private RootTest rootTest;
+@Controller
+public class Test2 {
+    @GET
+    @Path(path = "/test2")
+    public void test() {
+        System.out.println("Get metoda2 radi");
+    }
 }

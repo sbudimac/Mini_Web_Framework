@@ -20,6 +20,9 @@ public class Test {
     @Qualifier("implementation")
     private ITest iTest2;
 
+    @Autowired(verbose = true)
+    private ImplementationTest implementationTest;
+
     @GET
     @Path(path = "/test")
     public void test() {

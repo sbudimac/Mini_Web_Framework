@@ -54,10 +54,10 @@ public class DIEngine {
         Class cl = Class.forName(className);
         if (cl.getAnnotation(Qualifier.class) != null && (cl.getAnnotation(Bean.class) != null || cl.getAnnotation(Service.class) != null || cl.getAnnotation(Component.class) != null)) {
             Qualifier qualifier = (Qualifier) cl.getAnnotation(Qualifier.class);
-            if (DependencyContainer.implementations.get(qualifier.value()) != null) {
+            if (DependencyContainer.getImplemetnation(qualifier.value()) != null) {
                 throw new RuntimeException("Qualifier " + qualifier.value() + " already exists");
             }
-            DependencyContainer.implementations.put(qualifier.value(), className);
+            DependencyContainer.getImplementations().put(qualifier.value(), className);
         }
     }
 
@@ -76,13 +76,13 @@ public class DIEngine {
     }
 
     @SuppressWarnings({"rawtypes"})
-    private void processMethods(Class cl) throws InvocationTargetException, IllegalAccessException {
+    private void processMethods(Class cl) {
         for (Method m : cl.getDeclaredMethods()) {
             GET get = m.getAnnotation(GET.class);
             POST post = m.getAnnotation(POST.class);
             Path path = m.getAnnotation(Path.class);
             if (path != null && (get != null || post != null)) {
-                HttpMethod httpMethod = null;
+                HttpMethod httpMethod;
                 if (get != null) {
                     httpMethod = HttpMethod.GET;
                 } else {
@@ -110,7 +110,11 @@ public class DIEngine {
                 Object obj;
                 if (f.getAnnotation(Qualifier.class) != null) {
                     Qualifier qualifier = f.getAnnotation(Qualifier.class);
-                    Class impl = Class.forName((String) DependencyContainer.implementations.get(qualifier.value()));
+                    Class impl = null;
+                    if (DependencyContainer.hasImplementation(qualifier.value())) {
+                        impl = Class.forName((String) DependencyContainer.getImplemetnation(qualifier.value()));
+                    }
+                    assert impl != null;
                     obj = inject(impl);
                 } else {
                     if (fClass.isInterface()) {
