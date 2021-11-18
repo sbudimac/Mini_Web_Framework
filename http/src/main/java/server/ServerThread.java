@@ -1,6 +1,7 @@
 package server;
 
 import framework.discovery_mechanism.MethodInvoker;
+import framework.discovery_mechanism.MethodMapper;
 import framework.response.JsonResponse;
 import framework.response.Response;
 import framework.request.enums.HttpMethod;
@@ -14,6 +15,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class ServerThread implements Runnable{
 
@@ -49,16 +51,15 @@ public class ServerThread implements Runnable{
                 return;
             }
 
-            MethodInvoker.invokeMethod(request.getMethod(), request.getLocation());
-
-            // Response example
-            Map<String, Object> responseMap = new HashMap<>();
-            responseMap.put("route_location", request.getLocation());
-            responseMap.put("route_method", request.getMethod().toString());
-            responseMap.put("parameters", request.getParameters());
-            Response response = new JsonResponse(responseMap);
-
-            out.println(response.render());
+            if (MethodInvoker.invokeMethod(request.getMethod(), request) != null) {
+                out.println(Objects.requireNonNull(MethodInvoker.invokeMethod(request.getMethod(), request)).render());
+            } else {
+                Map<String, Object> noResponseMap = new HashMap<>();
+                noResponseMap.put("location", request.getLocation());
+                noResponseMap.put("message", "No response");
+                Response response = new JsonResponse(noResponseMap);
+                out.println(response.render());
+            }
 
             in.close();
             out.close();
